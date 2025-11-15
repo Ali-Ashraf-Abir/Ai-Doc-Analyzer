@@ -1,9 +1,6 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Upload, FileText, Download, FileJson, Send, Sparkles, User, ArrowLeft } from "lucide-react";
-import LandingPage from "./components/LandingPage";
-import AnalysisHistory from "./components/AnalysisHistory";
 
 interface AnalysisResult {
   text: string;
@@ -18,8 +15,7 @@ interface ChatMessage {
   imageUrl?: string;
 }
 
-export default function Home() {
-  const [showApp, setShowApp] = useState(false);
+export default function Analyzer() {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -70,23 +66,6 @@ export default function Home() {
       }
 
       setResult(data);
-
-      // Save to history
-      const historyItem = {
-        id: Date.now().toString(),
-        fileName: file.name,
-        timestamp: Date.now(),
-        wordCount: data.wordCount,
-        analysis: data.analysis.substring(0, 200),
-      };
-
-      const existingHistory = localStorage.getItem("analysisHistory");
-      const history = existingHistory ? JSON.parse(existingHistory) : [];
-      history.unshift(historyItem);
-      
-      // Keep only last 10 items
-      const limitedHistory = history.slice(0, 10);
-      localStorage.setItem("analysisHistory", JSON.stringify(limitedHistory));
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -103,68 +82,6 @@ export default function Home() {
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
-  };
-
-  const exportAnalysis = () => {
-    if (!result || !file) return;
-
-    const exportData = {
-      fileName: file.name,
-      timestamp: new Date().toISOString(),
-      wordCount: result.wordCount,
-      characterCount: result.text.length,
-      analysis: result.analysis,
-      suggestions: result.suggestions,
-      chatHistory: chatMessages,
-    };
-
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `analysis-${file.name}-${Date.now()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const exportAsPDF = () => {
-    if (!result || !file) return;
-
-    const content = `
-DOCUMENT ANALYSIS REPORT
-========================
-
-File: ${file.name}
-Date: ${new Date().toLocaleString()}
-Word Count: ${result.wordCount}
-Character Count: ${result.text.length}
-
-ANALYSIS
---------
-${result.analysis}
-
-IMPROVEMENT SUGGESTIONS
-----------------------
-${result.suggestions.map((s, i) => `${i + 1}. ${s}`).join("\n\n")}
-
-CHAT HISTORY
------------
-${chatMessages.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n")}
-    `.trim();
-
-    const blob = new Blob([content], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `analysis-${file.name}-${Date.now()}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   };
 
   const handleChatSubmit = async (e: React.FormEvent) => {
@@ -223,25 +140,8 @@ ${chatMessages.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n")}
   }
 
   return (
-    <>
-      {!showApp ? (
-        <LandingPage onGetStarted={() => setShowApp(true)} />
-      ) : (
-        <>
-          <AnalysisHistory />
-          <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
-          {/* Back to Home Button */}
-          <div className="container mx-auto px-4 pt-6 max-w-4xl">
-            <button
-              onClick={() => setShowApp(false)}
-              className="text-gray-400 hover:text-white transition-colors flex items-center gap-2 mb-4"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              Back to Home
-            </button>
-          </div>
-
-          <div className="container mx-auto px-4 py-12 max-w-4xl">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
+      <div className="container mx-auto px-4 py-12 max-w-4xl">
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold text-white mb-4 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
@@ -272,7 +172,9 @@ ${chatMessages.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n")}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-white" />
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
                   </div>
                   <div>
                     <p className="text-white font-medium">{file.name}</p>
@@ -327,25 +229,6 @@ ${chatMessages.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n")}
         {/* Results */}
         {result && (
           <div className="space-y-6">
-            {/* Export Buttons */}
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={exportAnalysis}
-                className="bg-gray-800 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center gap-2 border border-gray-600"
-              >
-                <FileJson className="w-5 h-5" />
-                Export JSON
-              </button>
-              
-              <button
-                onClick={exportAsPDF}
-                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
-              >
-                <Download className="w-5 h-5" />
-                Export Report
-              </button>
-            </div>
-
             {/* Document Info */}
             <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700 p-6 shadow-2xl">
               <h2 className="text-2xl font-bold text-white mb-4">Document Statistics</h2>
@@ -401,7 +284,9 @@ ${chatMessages.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n")}
             <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700 shadow-2xl overflow-hidden">
               <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4">
                 <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                  <Sparkles className="w-6 h-6" />
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
                   Ask Questions About Your Document
                 </h2>
                 <p className="text-blue-100 text-sm mt-1">Get specific insights, clarifications, or deeper analysis</p>
@@ -454,7 +339,9 @@ ${chatMessages.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n")}
                       >
                         {msg.role === "assistant" && (
                           <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                            <Sparkles className="w-5 h-5 text-white" />
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                            </svg>
                           </div>
                         )}
                         <div
@@ -480,7 +367,9 @@ ${chatMessages.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n")}
                         </div>
                         {msg.role === "user" && (
                           <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                            <User className="w-5 h-5 text-white" />
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
                           </div>
                         )}
                       </div>
@@ -536,12 +425,9 @@ ${chatMessages.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n")}
 
         {/* Footer */}
         <div className="text-center mt-12 text-gray-500 text-sm">
-          <p>Powered by Llama 3.3 70B via Groq • Built with Next.js</p>
+          <p>Powered by DeepSeek R1 via Groq • Built with Next.js</p>
         </div>
       </div>
     </div>
-        </>
-      )}
-    </>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { FileText, MessageSquare, Image, CheckCircle, Zap, Lock, Code, Palette, Bot, FileCode } from "lucide-react";
+
 interface LandingPageProps {
   onGetStarted: () => void;
 }
